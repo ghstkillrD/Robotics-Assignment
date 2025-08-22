@@ -1,62 +1,84 @@
-# object_detection.py
+# object_detection.py - FINAL
 import cv2
 import numpy as np
 
-def detect_apple(image_path):
+def detect_apple(image_path, show_windows=True):
     """
-    This function will take the path to an image and return the (x, y) coordinates of the center of a red apple.
+    Detects a red apple in an image and returns its center coordinates.
+    
+    Args:
+        image_path (str): Path to the image file.
+        show_windows (bool): Whether to display debug windows. Set to False later when integrating.
+    
+    Returns:
+        tuple: (x, y) coordinates of the apple's center, or None if not found.
     """
-    # 1. Load the image from the specified path
+    # Load the image
     image = cv2.imread(image_path)
-    # Make a copy for drawing on later
+    if image is None:
+        print(f"Error: Could not load image from {image_path}")
+        return None
     output_image = image.copy()
-
-    # 2. Convert the image from BGR to HSV color space (Better for color filtering)
+    
+    # Convert to HSV color space
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
-    # 3. Define the range for the color "Red" in HSV.
-    # These values will need to be adjusted! This is just a starting point.
-    #lower_red = np.array([160, 100, 100])   # Lower bound for Hue, Saturation, Value
-    #upper_red = np.array([180, 255, 255])  # Upper bound for Hue, Saturation, Value
-    lower_red = np.array([0, 100, 100])
-    upper_red = np.array([10, 255, 255])
-
-    # 4. Create a mask: a black and white image where white pixels are within the red range
+    
+    # DEFINE YOUR HSV RANGE HERE (The values you found that worked!)
+    lower_red = np.array([0, 100, 100])   # <- Adjust these based on your debug results
+    upper_red = np.array([10, 255, 255])  # <- Adjust these based on your debug results
+    
+    # Create a mask
     mask = cv2.inRange(hsv_image, lower_red, upper_red)
-
-    # 5. Find contours (outlines) of the white blobs in the mask
+    
+    # Clean up the mask using morphological operations (removes small noise)
+    kernel = np.ones((5, 5), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    
+    # Find contours
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # 6. If we found any contours, find the largest one (assumed to be the apple)
+    
+    # If contours are found, find the largest one
     if contours:
         largest_contour = max(contours, key=cv2.contourArea)
-        # Calculate the center and radius of the smallest circle that encloses the contour
+        # Calculate the center of the contour
         (x, y), radius = cv2.minEnclosingCircle(largest_contour)
         center = (int(x), int(y))
         radius = int(radius)
-
-        # 7. Draw a green circle and a dot at the center on the output image
-        cv2.circle(output_image, center, radius, (0, 255, 0), 2)  # Green outline
-        cv2.circle(output_image, center, 3, (0, 255, 0), -1)      # Green center dot
-
-        # 8. Print the center coordinates to the console
-        print(f"Apple detected at center coordinates: {center}")
-
-        # 9. Display the original image, the mask, and the output image with the detection
+        
+        # Only consider it a valid detection if the blob is reasonably sized
+        if radius > 5: 
+            # Draw the detection on the output image
+            cv2.circle(output_image, center, radius, (0, 255, 0), 2)
+            cv2.circle(output_image, center, 3, (0, 255, 0), -1)
+            
+            if show_windows:
+                # Display the intermediate steps for debugging
+                cv2.imshow('Original Image', image)
+                cv2.imshow('Mask', mask)
+                cv2.imshow('Apple Detection', output_image)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+            
+            print(f"Apple detected at center coordinates: {center}")
+            return center
+    
+    print("No apple detected.")
+    if show_windows:
         cv2.imshow('Original Image', image)
         cv2.imshow('Mask', mask)
         cv2.imshow('Apple Detection', output_image)
-        cv2.waitKey(0) # Wait for a key press to close the windows
+        cv2.waitKey(0)
         cv2.destroyAllWindows()
+    return None
 
-        # 10. Return the center coordinates for use in the navigation system
-        return center
-
-    else:
-        print("No apple detected.")
-        return None
-
-# Test the function immediately when this script is run
+# Test the function on different images
 if __name__ == "__main__":
-    # Test on the simulated world first (the easiest case)
+    print("Testing on simulated world...")
     detect_apple('../data/simulated_world.png')
+    
+    # Uncomment the lines below to test on your real apple images once you have them!
+    # print("\nTesting on real apple image 1...")
+    # detect_apple('../data/apple_1.jpg')
+    # print("\nTesting on real apple image 2...")
+    # detect_apple('../data/apple_2.jpg')
