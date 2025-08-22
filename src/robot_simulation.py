@@ -55,6 +55,65 @@ class DifferentialDriveRobot:
         """Return the current pose (x, y, theta) of the robot."""
         return self.x, self.y, self.theta
 
+    def plot_performance(self, goal_x, goal_y):
+        """
+        Generates and saves all required performance plots for the report.
+        """
+        time_steps = range(len(self.path_x))
+        
+        # 1. Plot x(t) and y(t) over time
+        plt.figure(figsize=(12, 8))
+        
+        plt.subplot(2, 2, 1)
+        plt.plot(time_steps, self.path_x, 'r-', label='x(t)')
+        plt.plot(time_steps, self.path_y, 'b-', label='y(t)')
+        plt.xlabel('Time Step')
+        plt.ylabel('Position (pixels)')
+        plt.title('Robot Position vs. Time')
+        plt.legend()
+        plt.grid(True)
+        
+        # 2. Plot orientation θ(t) over time
+        plt.subplot(2, 2, 2)
+        plt.plot(time_steps, self.path_theta, 'g-')
+        plt.xlabel('Time Step')
+        plt.ylabel('Orientation (radians)')
+        plt.title('Robot Orientation θ(t) vs. Time')
+        plt.grid(True)
+        
+        # 3. Calculate and plot distance to goal (error) over time
+        distances_to_goal = []
+        for x, y in zip(self.path_x, self.path_y):
+            dist = np.sqrt((goal_x - x)**2 + (goal_y - y)**2)
+            distances_to_goal.append(dist)
+            
+        plt.subplot(2, 2, 3)
+        plt.plot(time_steps, distances_to_goal, 'm-')
+        plt.xlabel('Time Step')
+        plt.ylabel('Distance to Goal (pixels)')
+        plt.title('Path Error: Distance to Goal vs. Time')
+        plt.grid(True)
+        
+        # 4. Plot the robot's trajectory (path) in 2D
+        plt.subplot(2, 2, 4)
+        plt.plot(self.path_x, self.path_y, 'b-', label='Path')
+        plt.plot(self.path_x[0], self.path_y[0], 'go', markersize=10, label='Start')
+        plt.plot(goal_x, goal_y, 'ro', markersize=10, label='Goal')
+        plt.xlabel('X position (pixels)')
+        plt.ylabel('Y position (pixels)')
+        plt.title('Robot Trajectory')
+        plt.legend()
+        plt.grid(True)
+        plt.axis('equal')
+        
+        plt.tight_layout()
+        plt.savefig('../results/performance_plots.png')  # Save the combined figure
+        plt.show()
+        
+        # Also save the individual plots for the report
+        # ... (You could add code here to save each subplot individually if needed)
+        print("All performance plots saved to '../results/performance_plots.png'")
+
 def main():
     """Test the robot's movement with a simple go-to-goal algorithm."""
     # Create a robot instance starting at (50, 250), facing right (0 radians)
@@ -110,19 +169,9 @@ def main():
     if not reached_goal:
         print("Stopped after maximum steps.")
         
-    # Plot the robot's path
-    plt.figure(figsize=(10, 10))
-    plt.plot(robot.path_x, robot.path_y, 'b-', label='Robot Path')
-    plt.plot(robot.path_x[0], robot.path_y[0], 'go', markersize=10, label='Start')
-    plt.plot(goal_x, goal_y, 'ro', markersize=10, label='Goal')
-    plt.xlabel('X position (pixels)')
-    plt.ylabel('Y position (pixels)')
-    plt.title('Robot Navigation Path')
-    plt.legend()
-    plt.grid(True)
-    plt.axis('equal')
-    plt.savefig('../results/robot_path.png')  # Save the plot for the report
-    plt.show()
+    # After the simulation loop ends:
+    # Plot the robot's path and generate performance plots
+    robot.plot_performance(goal_x, goal_y)
     
     print("Simulation complete. Plot saved to '../results/robot_path.png'")
 
